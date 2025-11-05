@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>单章式TXT阅读器</title>
+    <style>
+        :root {
+            --bg-color: #f5f5f5;
+            --text-color: #333;
+            --header-bg: #ffffff;
+            --border-color: #eee;
+            --card-bg: #ffffff;
+            --shadow-color: rgba(0,0,0,0.1);
+            --btn-bg: #3498db;
+            --btn-hover: #2980b9;
+            --btn-active: #2c3e50;
+            --loading-bg: rgba(255,255,255,0.8);
+            --error-color: #e74c3c;
+            --modal-overlay: rgba(0,0,0,0.5);
+            --chapter-title: #3498db;
+            --nav-bg: #ffffff;
+            --chapter-item-hover: #f1f9ff;
+            --chapter-item-active: #3498db;
+            --current-font: 'Microsoft YaHei', sans-serif;
+            --shelf-bg: #f9f9f9;
+            --book-card-bg: #fff;
+            --book-card-hover: #f0f7ff;
+        }
+
+        .dark-mode {
+            --bg-color: #121212;
+            --text-color: #e0e0e0;
+            --header-bg: #1e1e1e;
+            --border-color: #333;
+            --card-bg: #1e1e1e;
+            --shadow-color: rgba(0,0,0,0.3);
+            --btn-bg: #4a6fa5;
+            --btn-hover: #5d8cc0;
+            --btn-active: #6c9bcf;
+            --loading-bg: rgba(30,30,30,0.8);
+            --error-color: #ff6b6b;
+            --modal-overlay: rgba(0,0,0,0.7);
+            --chapter-title: #64b5f6;
+            --nav-bg: #1e1e1e;
+            --chapter-item-hover: #2a3a4a;
+            --chapter-item-active: #4a6fa5;
+            --shelf-bg: #1a1a1a;
+            --book-card-bg: #222;
+            --book-card-hover: #2a3a4a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            transition: background-color 0.3s, color 0.3s, border-color 0.3s;
+        }
+
+        body {
+            font-family: var(--current-font);
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 80px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
+            background-color: var(--header-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 10px;
+            color: var(--text-color);
+        }
+
+        .upload-area {
+            text-align: center;
+            padding: 40px 20px;
+            border: 2px dashed var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 30px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background-color: var(--card-bg);
+        }
+
+        .upload-area:hover {
+            border-color: var(--btn-bg);
+            background-color: var(--loading-bg);
+        }
+
+        .upload-icon {
+            font-size: 48px;
+            color: var(--border-color);
+            margin-bottom: 15px;
+        }
+
+        .upload-text {
+            font-size: 18px;
+            color: var(--text-color);
+        }
+
+        #file-input {
+            display: none;
+        }
+
+        .reader-area {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            min-height: 500px;
+            display: none;
+        }
+
+        .chapter-title {
+            font-size: 24px;
+            margin-bottom: 30px;
+            color: var(--chapter-title);
+            text-align: center;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .chapter-content {
+            font-size: 16px;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            word-break: break-word;
+            font-family: var(--current-font);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            display: none;
+            background-color: var(--loading-bg);
+            border-radius: 8px;
+        }
+
+        .loading-icon {
+            font-size: 36px;
+            color: var(--btn-bg);
+            animation: spin 1s linear infinite;
+        }
+
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: var(--error-color);
+            display: none;
+            background-color: var(--card-bg);
+            border-radius: 8px;
+        }
+
+        /* 底部操作栏 */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            background-color: var(--nav-bg);
+            border-top: 1px solid var(--border-color);
+            padding: 15px 0;
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            box-shadow: 0 -2px 10px var(--shadow-color);
+            display: none;
+            z-index: 100;
+        }
+
+        .nav-btn {
+            padding: 8px 20px;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--btn-bg);
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-btn:hover {
+            background-color: var(--btn-hover);
+        }
+
+        .nav-btn:disabled {
+            background-color: var(--border-color);
+            cursor: not-allowed;
+        }
+
+        .nav-btn.active {
+            background-color: var(--btn-active);
+        }
+
+        /* 主题切换按钮 */
+        .theme-toggle {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--btn-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            z-index: 50;
+            border: none;
+            font-size: 24px;
+        }
+
+        /* 字体选择按钮 */
+        .font-family-toggle {
+            position: fixed;
+            top: 20px;
+            right: 80px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--btn-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            z-index: 50;
+            border: none;
+            font-size: 20px;
+        }
+
+        /* 书架按钮 */
+        .bookshelf-toggle {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background-color: var(--btn-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 10px var(--shadow-color);
+            z-index: 50;
+            border: none;
+            font-size: 20px;
+        }
+
+        /* 字体选择弹窗 */
+        .font-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .font-modal-content {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .font-modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .font-modal-title {
+            font-size: 20px;
+            color: var(--text-color);
+        }
+
+        .close-font-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .font-option {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: transparent;
+            color: var(--text-color);
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 1px solid var(--border-color);
+        }
+
+        .font-option:hover {
+            background-color: var(--chapter-item-hover);
+        }
+
+        .font-option.active {
+            background-color: var(--chapter-item-active);
+            color: white;
+            border-color: var(--chapter-item-active);
+        }
+
+        /* 目录弹窗 */
+        .chapter-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .modal-content {
+            background-color: var(--card-bg);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .modal-title {
+            font-size: 20px;
+            color: var(--text-color);
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-color);
+        }
+
+        .modal-chapter-list {
+            list-style: none;
+        }
+
+        .modal-chapter-item {
+            padding: 12px 15px;
+            margin-bottom: 8px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background-color: transparent;
+            color: var(--text-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-chapter-item:hover {
+            background-color: var(--chapter-item-hover);
+        }
+
+        .modal-chapter-item.active {
+            background-color: var(--chapter-item-active);
+            color: white;
+        }
+
+        .chapter-number {
+            font-weight: bold;
+            margin-right: 10px;
+            min-width: 30px;
+        }
+
+        .chapter-name {
+            flex: 1;
+        }
+
+        /* 字体大小控制 */
+        .font-controls {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 90;
+        }
+
+        .font-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            background-color: var(--btn-bg);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 2px 5px var(--shadow-color);
+            border: none;
+            font-size: 18px;
+        }
+
+        /* 书架样式 */
+        .bookshelf-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--modal-overlay);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .bookshelf-content {
+            background-color: var(--shelf-bg);
+            border-radius: 8px;
+            width: 90%;
+            max-width: 900px;
+            max-height: 85vh;
+            overflow-y: auto;
+            padding: 20px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+        }
+
+        .bookshelf-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .bookshelf-title {
+            font-size: 20px;
+            color: var(--text-color);
+        }
+
+        .bookshelf-search {
+            margin-bottom: 20px;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+            font-size: 16px;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--btn-bg);
+        }
+
+        .books-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .book-card {
+            background-color: var(--book-card-bg);
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 2px 8px var(--shadow-color);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .book-card:hover {
+            transform: translateY(-5px);
+            background-color: var(--book-card-hover);
+            box-shadow: 0 5px 15px var(--shadow-color);
+        }
+
+        .book-title {
+            font-weight: bold;
+            margin-bottom: 10px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text-color);
+        }
+
+        .book-info {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.8;
+            margin-bottom: 5px;
+        }
+
+        .book-progress {
+            height: 4px;
+            background-color: var(--border-color);
+            border-radius: 2px;
+            margin-top: 10px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--btn-bg);
+        }
+
+        .remove-book {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: none;
+            border: none;
+            color: var(--error-color);
+            cursor: pointer;
+            font-size: 16px;
+            opacity: 0.7;
+            transition: all 0.2s ease;
+        }
+
+        .remove-book:hover {
+            opacity: 1;
+        }
+
+        .empty-shelf {
+            text-align: center;
+            padding: 50px 20px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        .empty-shelf i {
+            font-size: 64px;
+            margin-bottom: 20px;
+            display: block;
+            color: var(--border-color);
+        }
+
+        .shelf-tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            overflow-x: auto;
+            padding-bottom: 5px;
+        }
+
+        .shelf-tab {
+            padding: 6px 15px;
+            border-radius: 20px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            cursor: pointer;
+            white-space: nowrap;
+        }
+
+        .shelf-tab.active {
+            background-color: var(--btn-bg);
+            color: white;
+            border-color: var(--btn-bg);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .reader-area {
+                padding: 20px;
+                min-height: 400px;
+            }
+
+            .bottom-nav {
+                gap: 10px;
+                padding: 10px 0;
+            }
+
+            .nav-btn {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+
+            .theme-toggle {
+                top: 10px;
+                right: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 20px;
+            }
+
+            .font-family-toggle {
+                top: 10px;
+                right: 60px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .bookshelf-toggle {
+                top: 10px;
+                left: 10px;
+                width: 40px;
+                height: 40px;
+                font-size: 18px;
+            }
+
+            .font-controls {
+                bottom: 70px;
+                right: 10px;
+            }
+
+            .font-btn {
+                width: 40px;
+                height: 40px;
+                font-size: 16px;
+            }
+
+            .modal-content, .font-modal-content, .bookshelf-content {
+                width: 95%;
+                padding: 15px;
+            }
+
+            .books-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+            }
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 空状态提示 */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-color);
+            opacity: 0.7;
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 15px;
+            display: block;
+            color: var(--border-color);
+        }
+
+        /* 进度指示器 */
+        .progress-indicator {
+            font-size: 12px;
+            color: var(--text-color);
+            opacity: 0.7;
+            margin-left: 10px;
+        }
+
+        /* 书籍信息栏 */
+        .book-info-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .book-title-bar {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .save-to-shelf-btn {
+            padding: 6px 15px;
+            border-radius: 4px;
+            border: none;
+            background-color: var(--btn-bg);
+            color: white;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .save-to-shelf-btn:hover {
+            background-color: var(--btn-hover);
+        }
+    </style>
+</head>
+<body>
+    <!-- 主题切换按钮 -->
+    <button class="theme-toggle" id="theme-toggle">🌙</button>
+
+    <!-- 字体选择按钮 -->
+    <button class="font-family-toggle" id="font-family-toggle">Aa</button>
+
+    <!-- 书架按钮 -->
+    <button class="bookshelf-toggle" id="bookshelf-toggle">📚</button>
+
+    <!-- 字体大小控制 -->
+    <div class="font-controls">
+        <button class="font-btn" id="font-decrease">A-</button>
+        <button class="font-btn" id="font-reset">A</button>
+        <button class="font-btn" id="font-increase">A+</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <h1>单章式TXT阅读器</h1>
+            <p>上传TXT文档，享受舒适阅读体验</p>
+        </div>
+
+        <div class="upload-area" id="upload-area">
+            <div class="upload-icon">📄</div>
+            <div class="upload-text">点击或拖拽TXT文件到此处上传</div>
+            <input type="file" id="file-input" accept=".txt">
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="loading-icon">⌛</div>
+            <p>正在加载并解析文档...</p>
+        </div>
+
+        <div class="error" id="error">
+            <p>❌ 上传失败，请确保文件是TXT格式</p>
+        </div>
+
+        <div class="reader-area" id="reader-area">
+            <div class="book-info-bar">
+                <div class="book-title-bar" id="book-title-bar"></div>
+                <button class="save-to-shelf-btn" id="save-to-shelf-btn">保存到书架</button>
+            </div>
+            <div class="empty-state" id="empty-state">
+                <i>📖</i>
+                <p>暂无内容，请上传TXT文件开始阅读</p>
+            </div>
+            <h2 class="chapter-title" id="current-chapter-title"></h2>
+            <div class="chapter-content" id="current-chapter-content"></div>
+        </div>
+    </div>
+
+    <!-- 底部操作栏 -->
+    <div class="bottom-nav" id="bottom-nav">
+        <button class="nav-btn" id="prev-btn" disabled>
+            <span>◀</span> 上一章
+        </button>
+        <button class="nav-btn" id="toc-btn">
+            <span>📑</span> 目录
+        </button>
+        <button class="nav-btn" id="next-btn">
+            下一章 <span>▶</span>
+        </button>
+    </div>
+
+    <!-- 目录弹窗 -->
+    <div class="chapter-modal" id="chapter-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">章节列表</h3>
+                <button class="close-btn" id="close-modal">&times;</button>
+            </div>
+            <div class="modal-subtitle" id="modal-subtitle">
+                <span id="chapter-count">0</span> 个章节
+            </div>
+            <ul class="modal-chapter-list" id="modal-chapter-list">
+                <!-- 章节列表将在这里动态生成 -->
+            </ul>
+        </div>
+    </div>
+
+    <!-- 字体选择弹窗 -->
+    <div class="font-modal" id="font-modal">
+        <div class="font-modal-content">
+            <div class="font-modal-header">
+                <h3 class="font-modal-title">选择字体</h3>
+                <button class="close-font-btn" id="close-font-modal">&times;</button>
+            </div>
+            <button class="font-option" data-font="'Microsoft YaHei', sans-serif">微软雅黑</button>
+            <button class="font-option" data-font="'SimSun', serif">宋体</button>
+            <button class="font-option" data-font="'SimHei', sans-serif">黑体</button>
+            <button class="font-option" data-font="'KaiTi', serif">楷体</button>
+            <button class="font-option" data-font="'Arial', sans-serif">Arial</button>
+            <button class="font-option" data-font="'Times New Roman', serif">Times New Roman</button>
+            <button class="font-option" data-font="'Courier New', monospace">Courier New</button>
+            <button class="font-option" data-font="'Georgia', serif">Georgia</button>
+        </div>
+    </div>
+
+    <!-- 书架弹窗 -->
+    <div class="bookshelf-modal" id="bookshelf-modal">
+        <div class="bookshelf-content">
+            <div class="bookshelf-header">
+                <h3 class="bookshelf-title">我的书架</h3>
+                <button class="close-btn" id="close-bookshelf">&times;</button>
+            </div>
+
+            <div class="shelf-tabs">
+                <div class="shelf-tab active" data-filter="all">全部</div>
+                <div class="shelf-tab" data-filter="recent">最近阅读</div>
+                <div class="shelf-tab" data-filter="unfinished">未读完</div>
+            </div>
+
+            <div class="bookshelf-search">
+                <input type="text" class="search-input" placeholder="搜索书籍..." id="book-search">
+            </div>
+
+            <div class="books-grid" id="books-grid">
+                <!-- 书籍卡片将在这里动态生成 -->
+            </div>
+
+            <div class="empty-shelf" id="empty-shelf">
+                <i>📚</i>
+                <p>书架还是空的</p>
+                <p>上传书籍并保存到书架吧</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 获取DOM元素
+        const uploadArea = document.getElementById('upload-area');
+        const fileInput = document.getElementById('file-input');
+        const loading = document.getElementById('loading');
+        const error = document.getElementById('error');
+        const readerArea = document.getElementById('reader-area');
+        const currentChapterTitle = document.getElementById('current-chapter-title');
+        const currentChapterContent = document.getElementById('current-chapter-content');
+        const bottomNav = document.getElementById('bottom-nav');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const tocBtn = document.getElementById('toc-btn');
+        const chapterModal = document.getElementById('chapter-modal');
+        const closeModal = document.getElementById('close-modal');
+        const modalChapterList = document.getElementById('modal-chapter-list');
+        const themeToggle = document.getElementById('theme-toggle');
+        const fontDecrease = document.getElementById('font-decrease');
+        const fontReset = document.getElementById('font-reset');
+        const fontIncrease = document.getElementById('font-increase');
+        const emptyState = document.getElementById('empty-state');
+        const chapterCount = document.getElementById('chapter-count');
+        const fontFamilyToggle = document.getElementById('font-family-toggle');
+        const fontModal = document.getElementById('font-modal');
+        const closeFontModal = document.getElementById('close-font-modal');
+        const fontOptions = document.querySelectorAll('.font-option');
+        const bookshelfToggle = document.getElementById('bookshelf-toggle');
+        const bookshelfModal = document.getElementById('bookshelf-modal');
+        const closeBookshelf = document.getElementById('close-bookshelf');
+        const booksGrid = document.getElementById('books-grid');
+        const emptyShelf = document.getElementById('empty-shelf');
+        const bookSearch = document.getElementById('book-search');
+        const shelfTabs = document.querySelectorAll('.shelf-tab');
+        const saveToShelfBtn = document.getElementById('save-to-shelf-btn');
+        const bookTitleBar = document.getElementById('book-title-bar');
+
+        // 全局变量
+        let chapters = [];
+        let currentChapterIndex = 0;
+        let fontSize = 16; // 默认字体大小
+        let currentFont = "'Microsoft YaHei', sans-serif"; // 默认字体
+        let bookshelf = []; // 书架
+        let currentBook = null; // 当前阅读的书籍
+        let currentFileContent = null; // 当前文件内容
+
+        // 增强的章节识别正则表达式（支持更多格式）
+        const chapterRegex = /^(第\s*\d{1,4}\s*[章节回卷集部篇]\s*.*|第\s*[零一二三四五六七八九十百千万]+\s*[章节回卷集部篇]\s*.*|Chapter\s*\d+.*|Section\s*\d+.*|\d+\.\s*.*|第\s*\d+\s*章.*)/gm;
+
+        // 初始化应用
+        function initApp() {
+            // 加载保存的主题、字体设置和书架
+            loadSettings();
+
+            // 设置事件监听器
+            setupEventListeners();
+
+            // 渲染书架
+            renderBookshelf();
+        }
+
+        // 设置事件监听器
+        function setupEventListeners() {
+            // 上传区域事件
+            uploadArea.addEventListener('click', () => fileInput.click());
+            uploadArea.addEventListener('dragover', handleDragOver);
+            uploadArea.addEventListener('dragleave', handleDragLeave);
+            uploadArea.addEventListener('drop', handleDrop);
+
+            // 文件选择事件
+            fileInput.addEventListener('change', handleFileSelect);
+
+            // 导航按钮事件
+            prevBtn.addEventListener('click', goToPrevChapter);
+            nextBtn.addEventListener('click', goToNextChapter);
+            tocBtn.addEventListener('click', openChapterModal);
+            closeModal.addEventListener('click', closeChapterModal);
+
+            // 章节模态框事件
+            chapterModal.addEventListener('click', (e) => {
+                if (e.target === chapterModal) closeChapterModal();
+            });
+
+            // 主题切换事件
+            themeToggle.addEventListener('click', toggleTheme);
+
+            // 字体控制事件
+            fontDecrease.addEventListener('click', () => changeFontSize(-2));
+            fontReset.addEventListener('click', resetFontSize);
+            fontIncrease.addEventListener('click', () => changeFontSize(2));
+
+            // 字体选择事件
+            fontFamilyToggle.addEventListener('click', openFontModal);
+            closeFontModal.addEventListener('click', closeFontModalWindow);
+            fontModal.addEventListener('click', (e) => {
+                if (e.target === fontModal) closeFontModalWindow();
+            });
+
+            // 字体选项事件
+            fontOptions.forEach(option => {
+                option.addEventListener('click', () => {
+                    const font = option.getAttribute('data-font');
+                    changeFontFamily(font);
+                });
+            });
+
+            // 书架事件
+            bookshelfToggle.addEventListener('click', openBookshelf);
+            closeBookshelf.addEventListener('click', closeBookshelfWindow);
+            bookshelfModal.addEventListener('click', (e) => {
+                if (e.target === bookshelfModal) closeBookshelfWindow();
+            });
+
+            // 书架搜索事件
+            bookSearch.addEventListener('input', filterBooks);
+
+            // 书架标签事件
+            shelfTabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    shelfTabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filterBooks();
+                });
+            });
+
+            // 保存到书架按钮事件
+            saveToShelfBtn.addEventListener('click', saveCurrentBookToShelf);
+        }
+
+        // 处理拖拽事件
+        function handleDragOver(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--btn-bg');
+            uploadArea.style.backgroundColor = getComputedStyle(document.documentElement).getPropertyValue('--loading-bg');
+        }
+
+        function handleDragLeave() {
+            uploadArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            uploadArea.style.backgroundColor = '';
+        }
+
+        function handleDrop(e) {
+            e.preventDefault();
+            uploadArea.style.borderColor = getComputedStyle(document.documentElement).getPropertyValue('--border-color');
+            uploadArea.style.backgroundColor = '';
+
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleFile(files[0]);
+            }
+        }
+
+        // 处理文件选择
+        function handleFileSelect(e) {
+            const file = e.target.files[0];
+            if (file) {
+                handleFile(file);
+            }
+        }
+
+        // 处理文件
+        function handleFile(file) {
+            // 检查文件类型
+            if (!file.name.endsWith('.txt')) {
+                showError();
+                return;
+            }
+
+            // 显示加载状态
+            showLoading();
+
+            // 读取文件内容
+            const reader = new FileReader();
+
+            reader.onload = (e) => {
+                const content = e.target.result;
+                currentFileContent = content;
+                chapters = parseChapters(content);
+
+                // 创建当前书籍信息
+                currentBook = {
+                    id: generateId(),
+                    title: file.name.replace('.txt', ''),
+                    fileName: file.name,
+                    lastRead: new Date().toISOString(),
+                    totalChapters: chapters.length,
+                    currentChapter: 0,
+                    content: content // 存储内容以便保存到书架
+                };
+
+                // 更新书籍标题栏
+                bookTitleBar.textContent = currentBook.title;
+
+                // 检查是否已在书架中
+                const existingBookIndex = bookshelf.findIndex(book => book.fileName === currentBook.fileName);
+                if (existingBookIndex !== -1) {
+                    // 如果已存在，更新当前章节和最后阅读时间
+                    currentBook.currentChapter = bookshelf[existingBookIndex].currentChapter;
+                    saveToShelfBtn.textContent = "已在书架中";
+                    saveToShelfBtn.disabled = true;
+                } else {
+                    saveToShelfBtn.textContent = "保存到书架";
+                    saveToShelfBtn.disabled = false;
+                }
+
+                // 隐藏加载状态，显示阅读器和底部导航
+                hideAll();
+                readerArea.style.display = 'block';
+                bottomNav.style.display = 'flex';
+
+                // 显示第一章或空状态
+                if (chapters.length > 0) {
+                    showChapter(currentBook.currentChapter);
+                    renderChapterModal();
+                } else {
+                    showEmptyState();
+                }
+
+                // 重置字体大小
+                resetFontSize();
+            };
+
+            reader.onerror = () => {
+                showError();
+            };
+
+            // 读取TXT文件
+            reader.readAsText(file, 'utf-8');
+        }
+
+        // 解析章节
+        function parseChapters(content) {
+            const chapters = [];
+            let match;
+            let lastIndex = 0;
+            let chapterIndex = 0;
+
+            // 找出所有章节标题
+            while ((match = chapterRegex.exec(content)) !== null) {
+                const chapterTitle = match[0].trim();
+                const chapterStart = match.index;
+                const chapterEnd = chapterRegex.lastIndex;
+
+                // 如果不是第一个章节，添加前一个章节的内容
+                if (chapterIndex > 0) {
+                    const chapterContent = content.substring(lastIndex, chapterStart).trim();
+                    chapters[chapterIndex - 1].content = chapterContent;
+                }
+
+                // 添加新章节
+                chapters.push({
+                    id: `chapter-${chapterIndex}`,
+                    title: chapterTitle,
+                    content: '',
+                    number: chapterIndex + 1
+                });
+
+                lastIndex = chapterEnd;
+                chapterIndex++;
+            }
+
+            // 添加最后一个章节的内容
+            if (chapters.length > 0) {
+                const lastChapterContent = content.substring(lastIndex).trim();
+                chapters[chapters.length - 1].content = lastChapterContent;
+            }
+
+            // 如果没有识别到章节，创建一个默认章节
+            if (chapters.length === 0) {
+                chapters.push({
+                    id: 'chapter-0',
+                    title: '全文',
+                    content: content.trim(),
+                    number: 1
+                });
+            }
+
+            return chapters;
+        }
+
+        // 显示指定章节
+        function showChapter(index) {
+            if (chapters.length === 0) return;
+
+            // 更新当前章节索引
+            currentChapterIndex = index;
+
+            // 更新章节内容
+            const chapter = chapters[index];
+            currentChapterTitle.textContent = chapter.title;
+            currentChapterContent.textContent = chapter.content;
+            currentChapterContent.style.fontSize = `${fontSize}px`;
+
+            // 应用当前字体
+            applyCurrentFont();
+
+            // 更新按钮状态
+            updateNavButtons();
+
+            // 更新目录选中状态
+            updateModalChapterActive();
+
+            // 滚动到顶部
+            window.scrollTo(0, 0);
+
+            // 隐藏空状态
+            emptyState.style.display = 'none';
+            currentChapterTitle.style.display = 'block';
+            currentChapterContent.style.display = 'block';
+
+            // 更新当前书籍的阅读进度
+            if (currentBook) {
+                currentBook.currentChapter = index;
+                currentBook.lastRead = new Date().toISOString();
+
+                // 如果已在书架中，更新进度
+                const existingBookIndex = bookshelf.findIndex(book => book.id === currentBook.id);
+                if (existingBookIndex !== -1) {
+                    bookshelf[existingBookIndex].currentChapter = index;
+                    bookshelf[existingBookIndex].lastRead = currentBook.lastRead;
+                    saveBookshelf();
+                    renderBookshelf();
+                }
+            }
+        }
+
+        // 应用当前字体
+        function applyCurrentFont() {
+            document.documentElement.style.setProperty('--current-font', currentFont);
+            document.body.style.fontFamily = currentFont;
+            currentChapterContent.style.fontFamily = currentFont;
+            currentChapterTitle.style.fontFamily = currentFont;
+        }
+
+        // 显示空状态
+        function showEmptyState() {
+            emptyState.style.display = 'block';
+            currentChapterTitle.style.display = 'none';
+            currentChapterContent.style.display = 'none';
+        }
+
+        // 更新导航按钮状态
+        function updateNavButtons() {
+            prevBtn.disabled = currentChapterIndex === 0;
+            nextBtn.disabled = currentChapterIndex === chapters.length - 1;
+        }
+
+        // 生成目录弹窗
+        function renderChapterModal() {
+            modalChapterList.innerHTML = '';
+            chapterCount.textContent = chapters.length;
+
+            chapters.forEach((chapter, index) => {
+                const li = document.createElement('li');
+                li.className = `modal-chapter-item ${index === currentChapterIndex ? 'active' : ''}`;
+                li.dataset.index = index;
+
+                // 创建章节编号元素
+                const chapterNumber = document.createElement('span');
+                chapterNumber.className = 'chapter-number';
+                chapterNumber.textContent = chapter.number;
+
+                // 创建章节名称元素
+                const chapterName = document.createElement('span');
+                chapterName.className = 'chapter-name';
+                chapterName.textContent = chapter.title;
+
+                // 创建进度指示器
+                const progressIndicator = document.createElement('span');
+                progressIndicator.className = 'progress-indicator';
+                progressIndicator.textContent = `${index + 1}/${chapters.length}`;
+
+                // 组装列表项
+                li.appendChild(chapterNumber);
+                li.appendChild(chapterName);
+                li.appendChild(progressIndicator);
+
+                li.addEventListener('click', () => {
+                    showChapter(index);
+                    closeChapterModal();
+                });
+
+                modalChapterList.appendChild(li);
+            });
+        }
+
+        // 更新目录选中状态
+        function updateModalChapterActive() {
+            document.querySelectorAll('.modal-chapter-item').forEach((item, index) => {
+                item.classList.toggle('active', index === currentChapterIndex);
+            });
+        }
+
+        // 打开目录弹窗
+        function openChapterModal() {
+            if (chapters.length === 0) return;
+            chapterModal.style.display = 'flex';
+        }
+
+        // 关闭目录弹窗
+        function closeChapterModal() {
+            chapterModal.style.display = 'none';
+        }
+
+        // 打开字体选择弹窗
+        function openFontModal() {
+            fontModal.style.display = 'flex';
+            updateFontOptionsActiveState();
+        }
+
+        // 关闭字体选择弹窗
+        function closeFontModalWindow() {
+            fontModal.style.display = 'none';
+        }
+
+        // 更新字体选项的激活状态
+        function updateFontOptionsActiveState() {
+            fontOptions.forEach(option => {
+                const font = option.getAttribute('data-font');
+                option.classList.toggle('active', font === currentFont);
+            });
+        }
+
+        // 切换到上一章
+        function goToPrevChapter() {
+            if (currentChapterIndex > 0) {
+                showChapter(currentChapterIndex - 1);
+            }
+        }
+
+        // 切换到下一章
+        function goToNextChapter() {
+            if (currentChapterIndex < chapters.length - 1) {
+                showChapter(currentChapterIndex + 1);
+            }
+        }
+
+        // 切换主题
+        function toggleTheme() {
+            document.body.classList.toggle('dark-mode');
+            themeToggle.textContent = document.body.classList.contains('dark-mode') ? '☀️' : '🌙';
+            saveSettings();
+        }
+
+        // 改变字体大小
+        function changeFontSize(delta) {
+            fontSize += delta;
+            fontSize = Math.max(12, Math.min(24, fontSize)); // 限制在12-24px之间
+            currentChapterContent.style.fontSize = `${fontSize}px`;
+            saveSettings();
+        }
+
+        // 重置字体大小
+        function resetFontSize() {
+            fontSize = 16;
+            currentChapterContent.style.fontSize = `${fontSize}px`;
+            saveSettings();
+        }
+
+        // 更改字体族
+        function changeFontFamily(font) {
+            currentFont = font;
+            applyCurrentFont();
+            closeFontModalWindow();
+            saveSettings();
+        }
+
+        // 保存当前书籍到书架
+        function saveCurrentBookToShelf() {
+            if (!currentBook || !currentFileContent) return;
+
+            // 检查是否已在书架中
+            const existingBookIndex = bookshelf.findIndex(book => book.fileName === currentBook.fileName);
+
+            if (existingBookIndex === -1) {
+                // 添加到书架
+                bookshelf.push({...currentBook});
+                saveBookshelf();
+                renderBookshelf();
+
+                // 更新按钮状态
+                saveToShelfBtn.textContent = "已在书架中";
+                saveToShelfBtn.disabled = true;
+
+                // 显示成功提示
+                alert("已保存到书架");
+            }
+        }
+
+        // 从书架中移除书籍
+        function removeBookFromShelf(bookId) {
+            bookshelf = bookshelf.filter(book => book.id !== bookId);
+            saveBookshelf();
+            renderBookshelf();
+        }
+
+        // 打开书架中的书籍
+        function openBookFromShelf(book) {
+            // 关闭书架
+            closeBookshelfWindow();
+
+            // 显示加载状态
+            showLoading();
+
+            // 解析书籍内容
+            currentFileContent = book.content;
+            chapters = parseChapters(book.content);
+
+            // 更新当前书籍信息
+            currentBook = {
+                ...book,
+                lastRead: new Date().toISOString()
+            };
+
+            // 更新书籍标题栏
+            bookTitleBar.textContent = currentBook.title;
+
+            // 更新按钮状态
+            saveToShelfBtn.textContent = "已在书架中";
+            saveToShelfBtn.disabled = true;
+
+            // 隐藏加载状态，显示阅读器和底部导航
+            hideAll();
+            readerArea.style.display = 'block';
+            bottomNav.style.display = 'flex';
+
+            // 显示上次阅读的章节
+            if (chapters.length > 0) {
+                showChapter(currentBook.currentChapter);
+                renderChapterModal();
+            } else {
+                showEmptyState();
+            }
+
+            // 更新书架中的最后阅读时间
+            const existingBookIndex = bookshelf.findIndex(b => b.id === book.id);
+            if (existingBookIndex !== -1) {
+                bookshelf[existingBookIndex].lastRead = currentBook.lastRead;
+                saveBookshelf();
+            }
+        }
+
+        // 渲染书架
+        function renderBookshelf() {
+            if (bookshelf.length === 0) {
+                booksGrid.style.display = 'none';
+                emptyShelf.style.display = 'block';
+                return;
+            }
+
+            // 先隐藏空状态
+            booksGrid.style.display = 'grid';
+            emptyShelf.style.display = 'none';
+
+            // 过滤书籍
+            filterBooks();
+        }
+
+        // 过滤书籍
+        function filterBooks() {
+            const searchTerm = bookSearch.value.toLowerCase();
+            const activeTab = document.querySelector('.shelf-tab.active').dataset.filter;
+
+            // 先按最后阅读时间排序
+            const sortedBooks = [...bookshelf].sort((a, b) =>
+                new Date(b.lastRead) - new Date(a.lastRead)
+            );
+
+            // 应用过滤器
+            let filteredBooks = sortedBooks;
+
+            if (activeTab === 'recent') {
+                // 只显示最近阅读的（7天内）
+                const sevenDaysAgo = new Date();
+                sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+                filteredBooks = filteredBooks.filter(book =>
+                    new Date(book.lastRead) >= sevenDaysAgo
+                );
+            } else if (activeTab === 'unfinished') {
+                // 只显示未读完的
+                filteredBooks = filteredBooks.filter(book =>
+                    book.currentChapter < book.totalChapters - 1
+                );
+            }
+
+            // 应用搜索
+            if (searchTerm) {
+                filteredBooks = filteredBooks.filter(book =>
+                    book.title.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            // 渲染过滤后的书籍
+            booksGrid.innerHTML = '';
+
+            if (filteredBooks.length === 0) {
+                booksGrid.innerHTML = `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 40px 20px; color: var(--text-color); opacity: 0.7;">
+                        <p>没有找到匹配的书籍</p>
+                    </div>
+                `;
+                return;
+            }
+
+            filteredBooks.forEach(book => {
+                const progress = book.totalChapters > 0
+                    ? (book.currentChapter / book.totalChapters) * 100
+                    : 0;
+
+                const card = document.createElement('div');
+                card.className = 'book-card';
+                card.innerHTML = `
+                    <button class="remove-book" data-id="${book.id}">×</button>
+                    <div class="book-title">${book.title}</div>
+                    <div class="book-info">章节: ${book.currentChapter + 1}/${book.totalChapters}</div>
+                    <div class="book-info">上次阅读: ${formatDate(book.lastRead)}</div>
+                    <div class="book-progress">
+                        <div class="progress-bar" style="width: ${progress}%"></div>
+                    </div>
+                `;
+
+                // 添加点击事件打开书籍
+                card.addEventListener('click', (e) => {
+                    if (!e.target.classList.contains('remove-book')) {
+                        openBookFromShelf(book);
+                    }
+                });
+
+                // 添加删除按钮事件
+                const removeBtn = card.querySelector('.remove-book');
+                removeBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    if (confirm(`确定要从书架中移除《${book.title}》吗？`)) {
+                        removeBookFromShelf(book.id);
+                    }
+                });
+
+                booksGrid.appendChild(card);
+            });
+        }
+
+        // 打开书架
+        function openBookshelf() {
+            bookshelfModal.style.display = 'flex';
+            renderBookshelf();
+        }
+
+        // 关闭书架
+        function closeBookshelfWindow() {
+            bookshelfModal.style.display = 'none';
+            bookSearch.value = ''; // 清空搜索框
+        }
+
+        // 保存设置到localStorage
+        function saveSettings() {
+            const settings = {
+                darkMode: document.body.classList.contains('dark-mode'),
+                fontSize: fontSize,
+                fontFamily: currentFont
+            };
+            localStorage.setItem('readerSettings', JSON.stringify(settings));
+        }
+
+        // 保存书架到localStorage
+        function saveBookshelf() {
+            localStorage.setItem('bookshelf', JSON.stringify(bookshelf));
+        }
+
+        // 从localStorage加载设置
+        function loadSettings() {
+            // 加载阅读器设置
+            const savedSettings = localStorage.getItem('readerSettings');
+            if (savedSettings) {
+                const settings = JSON.parse(savedSettings);
+
+                // 应用主题设置
+                if (settings.darkMode) {
+                    document.body.classList.add('dark-mode');
+                    themeToggle.textContent = '☀️';
+                }
+
+                // 应用字体大小设置
+                if (settings.fontSize) {
+                    fontSize = settings.fontSize;
+                }
+
+                // 应用字体设置
+                if (settings.fontFamily) {
+                    currentFont = settings.fontFamily;
+                    applyCurrentFont();
+                }
+            }
+
+            // 加载书架
+            const savedBookshelf = localStorage.getItem('bookshelf');
+            if (savedBookshelf) {
+                bookshelf = JSON.parse(savedBookshelf);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading() {
+            hideAll();
+            loading.style.display = 'block';
+        }
+
+        // 显示错误状态
+        function showError() {
+            hideAll();
+            error.style.display = 'block';
+        }
+
+        // 隐藏所有状态
+        function hideAll() {
+            loading.style.display = 'none';
+            error.style.display = 'none';
+            readerArea.style.display = 'none';
+            bottomNav.style.display = 'none';
+            chapterModal.style.display = 'none';
+            fontModal.style.display = 'none';
+            bookshelfModal.style.display = 'none';
+        }
+
+        // 生成唯一ID
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+        }
+
+        // 格式化日期
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const diffMs = now - date;
+            const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) {
+                return '今天';
+            } else if (diffDays === 1) {
+                return '昨天';
+            } else if (diffDays < 7) {
+                return `${diffDays}天前`;
+            } else {
+                return `${date.getMonth() + 1}月${date.getDate()}日`;
+            }
+        }
+
+        // 初始化应用
+        window.addEventListener('DOMContentLoaded', initApp);
+    </script>
+</body>
+</html>
